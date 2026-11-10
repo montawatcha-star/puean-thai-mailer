@@ -1,0 +1,610 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="description" content="Puean Thai mailer box 3D preview: fold, open, recolor and export the dieline as PDF.">
+<style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
+<title>Puean Thai Mailer 3D</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bagel+Fat+One&family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+Thai:wght@400;500;600&display=swap">
+<style>
+/* Layout: a cutting-mat stage for the 3D box on the left, a print-spec control sheet on the right */
+:root{
+  --bg:#eef0ec; --surface:#fbfcfa; --fg:#1b2420; --muted:#5d6963; --line:#d6dbd4;
+  --accent:#2c6a4f; --accent-fg:#ffffff; --stage:#dde3dc; --chip:rgba(251,252,250,.86);
+  --f-display:"Bricolage Grotesque","IBM Plex Sans Thai",system-ui,sans-serif;
+  --f-body:"IBM Plex Sans Thai",system-ui,sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0f1311; --surface:#161b18; --fg:#e5eae6; --muted:#97a39c; --line:#27302b;
+  --accent:#74c49d; --accent-fg:#0c1912; --stage:#0b0e0d; --chip:rgba(22,27,24,.86); color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0f1311; --surface:#161b18; --fg:#e5eae6; --muted:#97a39c; --line:#27302b;
+  --accent:#74c49d; --accent-fg:#0c1912; --stage:#0b0e0d; --chip:rgba(22,27,24,.86); color-scheme:dark}
+
+*{box-sizing:border-box}
+html,body{height:100%}
+body{background:var(--bg);color:var(--fg);font-family:var(--f-body);font-size:14px;line-height:1.5;
+  padding-block:16px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.app{display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:16px;height:100%}
+.stage{position:relative;border-radius:14px;overflow:hidden;background:
+  radial-gradient(120% 90% at 50% 20%, color-mix(in srgb,var(--stage) 70%, var(--surface)) 0%, var(--stage) 70%);min-height:0}
+#gl{position:absolute;inset:0;width:100%;height:100%;display:block;touch-action:none;cursor:grab}
+#gl:active{cursor:grabbing}
+.stage-head{position:absolute;top:14px;left:14px;right:14px;display:flex;justify-content:space-between;align-items:flex-start;gap:12px;pointer-events:none}
+.brandline .eyebrow{font-family:var(--f-mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.brandline h1{margin:0;font-family:var(--f-display);font-weight:700;font-size:clamp(22px,3vw,30px);line-height:1.05;letter-spacing:-.01em}
+.dims{font-family:var(--f-mono);font-size:12px;font-variant-numeric:tabular-nums;background:var(--chip);border:1px solid var(--line);
+  padding:6px 10px;border-radius:999px;white-space:nowrap;backdrop-filter:blur(6px)}
+.views{position:absolute;top:70px;left:14px;display:flex;gap:6px;flex-wrap:wrap}
+.views button{font:500 12px var(--f-body);padding:5px 10px;border-radius:999px;border:1px solid var(--line);background:var(--chip);color:var(--fg);cursor:pointer;backdrop-filter:blur(6px)}
+.views button:hover{border-color:var(--accent)}
+.dock{position:absolute;left:14px;right:14px;bottom:14px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;
+  background:var(--chip);border:1px solid var(--line);border-radius:12px;padding:10px 12px;backdrop-filter:blur(8px)}
+.fold{flex:1 1 260px;min-width:0}
+.fold-top{display:flex;justify-content:space-between;font-size:12px;color:var(--muted)}
+.fold-top strong{color:var(--fg);font-weight:600}
+.ticks{display:flex;justify-content:space-between;font-family:var(--f-mono);font-size:10px;color:var(--muted);letter-spacing:.04em}
+input[type=range]{width:100%;accent-color:var(--accent);margin:4px 0 2px}
+.btn{font:600 13px var(--f-body);border-radius:9px;padding:8px 12px;border:1px solid var(--line);background:var(--surface);color:var(--fg);cursor:pointer;white-space:nowrap}
+.btn:hover{border-color:var(--accent)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-fg)}
+.btn.primary:hover{filter:brightness(1.06)}
+.btn:disabled{opacity:.55;cursor:progress}
+button:focus-visible,input:focus-visible,label.file:focus-within{outline:2px solid var(--accent);outline-offset:2px}
+
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:14px;overflow:auto;min-height:0}
+.sec{padding:16px 18px;border-bottom:1px solid var(--line);display:grid;gap:10px}
+.sec:last-child{border-bottom:0}
+.sec h2{margin:0;font-family:var(--f-display);font-size:15px;font-weight:700;display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+.sec h2 small{font-family:var(--f-mono);font-size:11px;font-weight:400;color:var(--muted);letter-spacing:.04em}
+.row{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.lbl{font-size:12px;color:var(--muted)}
+.swatches{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.sw{width:30px;height:30px;border-radius:50%;border:1px solid rgba(0,0,0,.18);cursor:pointer;padding:0;position:relative}
+.sw[aria-pressed="true"]::after{content:"";position:absolute;inset:-5px;border-radius:50%;border:2px solid var(--accent)}
+.sw-custom{width:30px;height:30px;border-radius:50%;border:1px dashed var(--muted);padding:0;overflow:hidden;cursor:pointer;background:none}
+.sw-custom::-webkit-color-swatch-wrapper{padding:0}.sw-custom::-webkit-color-swatch{border:0;border-radius:50%}
+.field{display:grid;gap:4px}
+.field input[type=text],.field input[type=number]{font:14px var(--f-body);padding:8px 10px;border-radius:8px;border:1px solid var(--line);background:var(--bg);color:var(--fg);width:100%;min-width:0}
+.dimgrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.dimgrid input{font-family:var(--f-mono)!important;font-variant-numeric:tabular-nums}
+label.file{display:inline-flex;align-items:center;gap:6px}
+label.file input{position:absolute;opacity:0;width:1px;height:1px}
+.toggle{display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer}
+.toggle input{accent-color:var(--accent);width:16px;height:16px}
+.note{font-size:12px;color:var(--muted);margin:0}
+.status{font-size:12px;min-height:18px;color:var(--muted)}
+.status.ok{color:var(--accent)}
+.legend{display:flex;gap:14px;font-family:var(--f-mono);font-size:11px;color:var(--muted)}
+.legend i{display:inline-block;width:22px;height:0;border-top:2px solid var(--fg);vertical-align:middle;margin-right:6px}
+.legend i.fold{border-top:2px dashed #2d6bc4}
+
+@media (max-width:860px){
+  html,body{height:auto}
+  .app{grid-template-columns:minmax(0,1fr);height:auto}
+  .stage{height:68vh;min-height:420px}
+  .panel{overflow:visible}
+}
+@media (max-width:480px){
+  .views{top:64px}
+  .dock{padding:8px}
+}
+</style>
+</head>
+<body>
+
+<div class="app">
+  <section class="stage" id="stage" aria-label="โมเดลกล่อง 3 มิติ">
+    <canvas id="gl"></canvas>
+    <div class="stage-head">
+      <div class="brandline">
+        <div class="eyebrow">Mailer box · Roll end tuck front</div>
+        <h1 id="titleBrand">Puean Thai</h1>
+      </div>
+      <div class="dims" id="dimsChip">315 × 202 × 62 mm</div>
+    </div>
+    <div class="views" role="group" aria-label="มุมมองกล้อง">
+      <button data-view="iso">มุม 3/4</button>
+      <button data-view="front">ด้านหน้า</button>
+      <button data-view="top">ด้านบน</button>
+      <button data-view="side">ด้านข้าง</button>
+    </div>
+    <div class="dock">
+      <button class="btn" id="btnFlat">คลี่แบน</button>
+      <div class="fold">
+        <div class="fold-top"><label for="fold">ขั้นการพับ</label><strong id="foldLabel">ประกอบเสร็จ</strong></div>
+        <input type="range" id="fold" min="0" max="1000" value="1000">
+        <div class="ticks"><span>แผ่นแบน</span><span>ผนัง</span><span>ปีกข้าง</span><span>ปิดฝา</span></div>
+      </div>
+      <button class="btn" id="btnBox">พับเป็นกล่อง</button>
+      <button class="btn primary" id="btnLid">ปิดฝา</button>
+    </div>
+  </section>
+
+  <aside class="panel">
+    <div class="sec">
+      <h2>ฝากล่อง <small id="lidDeg">เปิด 55%</small></h2>
+      <input type="range" id="lidOpen" min="0" max="100" value="55" aria-label="องศาการเปิดฝา">
+      <label class="toggle"><input type="checkbox" id="autoRot"> หมุนโชว์อัตโนมัติ</label>
+    </div>
+
+    <div class="sec">
+      <h2>สีกล่องด้านนอก <small id="boardHex">#C6A676</small></h2>
+      <div class="swatches" id="swBoard"></div>
+    </div>
+    <div class="sec">
+      <h2>สีด้านใน <small id="insideHex">#C6A676</small></h2>
+      <div class="swatches" id="swInside"></div>
+    </div>
+    <div class="sec">
+      <h2>สีหมึกพิมพ์ <small id="inkHex">#FFFFFF</small></h2>
+      <div class="swatches" id="swInk"></div>
+    </div>
+
+    <div class="sec">
+      <h2>งานพิมพ์</h2>
+      <div class="field"><label class="lbl" for="brand">ชื่อแบรนด์บนฝา</label><input type="text" id="brand" value="PUEAN THAI" maxlength="28"></div>
+      <div class="field"><label class="lbl" for="tagline">ข้อความบนลิ้นเสียบ</label><input type="text" id="tagline" value="THAI EXPERIENCE · PACKED WITH CARE" maxlength="60"></div>
+      <div class="row">
+        <label class="btn file" for="logoFile">อัปโหลดโลโก้ (PNG/SVG)<input type="file" id="logoFile" accept="image/png,image/svg+xml,image/jpeg,image/webp"></label>
+        <button class="btn" id="logoClear" hidden>ใช้ตัวอักษรแทน</button>
+      </div>
+      <label class="toggle"><input type="checkbox" id="showFolds"> แสดงเส้นพับบนโมเดล</label>
+    </div>
+
+    <div class="sec">
+      <h2>ขนาดภายใน <small>มม.</small></h2>
+      <div class="dimgrid">
+        <div class="field"><label class="lbl" for="dimW">กว้าง</label><input type="number" id="dimW" value="315" min="100" max="600"></div>
+        <div class="field"><label class="lbl" for="dimD">ลึก</label><input type="number" id="dimD" value="202" min="80" max="450"></div>
+        <div class="field"><label class="lbl" for="dimH">สูง</label><input type="number" id="dimH" value="62" min="30" max="200"></div>
+      </div>
+      <div class="row"><button class="btn" id="dimApply">อัปเดตขนาด</button><span class="note" id="flatSize"></span></div>
+    </div>
+
+    <div class="sec">
+      <h2>ส่งออก PDF</h2>
+      <p class="note">หน้า 1 คือ dieline สเกล 1:1 พร้อมเส้นตัดและเส้นพับ หน้า 2 คือภาพ 3D ตามมุมกล้องปัจจุบันพร้อมสเปก</p>
+      <div class="legend"><span><i></i>เส้นตัด</span><span><i class="fold"></i>เส้นพับ</span></div>
+      <button class="btn primary" id="btnPdf">ดาวน์โหลด PDF</button>
+      <div class="status" id="pdfStatus" aria-live="polite"></div>
+    </div>
+  </aside>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script>
+(function(){
+"use strict";
+const $ = id => document.getElementById(id);
+const reduceMotion = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+/* ---------------- state ---------------- */
+const S = {W:315, D:202, H:62, T:2.6};
+const state = {
+  fold:1, foldTarget:1, open:.55, openTarget:.55,
+  board:'#c6a676', inside:'#c6a676', ink:'#ffffff',
+  brand:'PUEAN THAI', tagline:'THAI EXPERIENCE · PACKED WITH CARE',
+  logoImg:null, showFolds:false
+};
+try{ const saved = JSON.parse(localStorage.getItem('ptm-colors')||'null'); if(saved){ Object.assign(state, saved); } }catch(e){}
+function saveColors(){ try{ localStorage.setItem('ptm-colors', JSON.stringify({board:state.board,inside:state.inside,ink:state.ink})); }catch(e){} }
+
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+const ss=(a,b,x)=>{const t=clamp((x-a)/(b-a),0,1);return t*t*(3-2*t);};
+function shade(hex,amt){ let n=parseInt(hex.slice(1),16); let r=n>>16,g=(n>>8)&255,b=n&255;
+  const f=c=>clamp(Math.round(amt<0? c*(1+amt) : c+(255-c)*amt),0,255);
+  return '#'+[f(r),f(g),f(b)].map(v=>v.toString(16).padStart(2,'0')).join(''); }
+
+/* ---------------- dieline spec (mm, print-layout coords: x right, y down; base top-left = 0,0) ---------------- */
+let spec, B;
+function buildSpec(W,D,H){
+  const T=S.T, E=Math.round(Math.min(85, D*.42)), LF=H-4;
+  const yLid=-H-D, yLF=yLid-LF;
+  const rect=(x0,y0,x1,y1)=>[[x0,y0],[x1,y0],[x1,y1],[x0,y1]];
+  const mx=pts=>pts.map(([x,y])=>[W-x,y]).reverse();
+  const mxSeg=s=>s.map(([x,y])=>[W-x,y]);
+  const arc=(cx,cy,r,a0,a1,n=10)=>{const o=[];for(let i=0;i<=n;i++){const a=a0+(a1-a0)*i/n;o.push([cx+r*Math.cos(a),cy+r*Math.sin(a)]);}return o;};
+  const t1=[Math.round(D*.22),Math.round(D*.36)], t2=[Math.round(D*.62),Math.round(D*.76)];
+  const P=[];
+  const add=(o)=>P.push(o);
+  const LR=(o, polyL)=>{ // add left + mirrored right
+    add(Object.assign({},o,{id:o.id+'L',poly:polyL}));
+    add(Object.assign({},o,{id:o.id+'R',poly:mx(polyL),pivot:[W-o.pivot[0],o.pivot[1]],hinge:mxSeg(o.hinge),
+      ang:-o.ang, off:[-o.off[0],o.off[1],o.off[2]], parent:o.parentR||o.parent}));
+  };
+  add({id:'base',parent:null,poly:rect(0,0,W,D),pivot:[0,0],hinge:null});
+  add({id:'front',parent:'base',poly:rect(0,D,W,D+H),pivot:[0,D],axis:'x',ang:-Math.PI/2,ph:'walls',hinge:[[0,D],[W,D]],off:[0,0,0]});
+  add({id:'back',parent:'base',poly:rect(0,-H,W,0),pivot:[0,0],axis:'x',ang:Math.PI/2,ph:'walls',hinge:[[0,0],[W,0]],off:[0,0,0]});
+  LR({id:'frontEar',parent:'front',pivot:[0,D],axis:'z',ang:-Math.PI/2,ph:'ears',hinge:[[0,D+2],[0,D+H-2]],off:[T*1.3,T*.6,0]},
+     [[0,D+2],[-E+8,D+2],[-E,D+9],[-E,D+H-9],[-E+8,D+H-2],[0,D+H-2]]);
+  LR({id:'backEar',parent:'back',pivot:[0,0],axis:'z',ang:-Math.PI/2,ph:'ears',hinge:[[0,-H+2],[0,-2]],off:[T*1.3,T*.6,0]},
+     [[0,-H+2],[-E+8,-H+2],[-E,-H+9],[-E,-9],[-E+8,-2],[0,-2]]);
+  LR({id:'side',parent:'base',pivot:[0,0],axis:'z',ang:-Math.PI/2,ph:'sides',hinge:[[0,0],[0,D]],off:[0,0,0]},
+     rect(-H,0,0,D).reverse());
+  const x0=-2*H+3;
+  LR({id:'sideIn',parent:'sideL',parentR:'sideR',pivot:[-H,0],axis:'z',ang:-Math.PI,ph:'inner',hinge:[[-H,3],[-H,D-3]],off:[0,T*1.15,0]},
+     [[-H,3],[x0,3],[x0,t1[0]],[x0-6,t1[0]+2],[x0-6,t1[1]-2],[x0,t1[1]],[x0,t2[0]],[x0-6,t2[0]+2],[x0-6,t2[1]-2],[x0,t2[1]],[x0,D-3],[-H,D-3]]);
+  add({id:'lid',parent:'back',poly:rect(0,yLid,W,-H),pivot:[0,-H],axis:'x',ang:Math.PI/2,ph:'lid',hinge:[[0,-H],[W,-H]],off:[0,-T*.5,-T*.9]});
+  LR({id:'lidDust',parent:'lid',pivot:[0,-H],axis:'z',ang:-Math.PI/2,ph:'tuck',hinge:[[0,yLid+18],[0,-H-3]],off:[T*3.4,T*.5,0]},
+     [[0,-H-3],[-H+24,-H-3],[-H+6,-H-22],[-H+6,yLid+32],[-H+20,yLid+18],[0,yLid+18]]);
+  add({id:'lidFront',parent:'lid',poly:rect(0,yLF,W,yLid),pivot:[0,yLid],axis:'x',ang:Math.PI/2,ph:'tuck',hinge:[[0,yLid],[W,yLid]],off:[0,T*.6,T*1.5]});
+  LR({id:'lidEar',parent:'lidFront',pivot:[0,yLid],axis:'z',ang:-Math.PI/2,ph:'tuck',hinge:[[0,yLF],[0,yLid-6]],off:[T*3.4,T*.5,0]},
+     [[0,yLid-6],[-40,yLid-6],[-48,yLid-14],...arc(-24,yLF+24,24,Math.PI,Math.PI*1.5,12),[0,yLF]]);
+  const slots=[];
+  for(const t of [t1,t2]){ slots.push([4,t[0]+1,5,t[1]-t[0]-2]); slots.push([W-9,t[0]+1,5,t[1]-t[0]-2]); }
+  let minX=1e9,minY=1e9,maxX=-1e9,maxY=-1e9;
+  for(const p of P) for(const [x,y] of p.poly){minX=Math.min(minX,x);maxX=Math.max(maxX,x);minY=Math.min(minY,y);maxY=Math.max(maxY,y);}
+  const byId={}; P.forEach(p=>byId[p.id]=p);
+  return {panels:P, byId, slots, yLid, yLF, bounds:{minX,minY,maxX,maxY,w:maxX-minX,h:maxY-minY}};
+}
+
+/* ---------------- artwork ---------------- */
+const fiber = (()=>{ const c=document.createElement('canvas'); c.width=c.height=256; const g=c.getContext('2d');
+  let seed=7; const rnd=()=>{seed=(seed*16807)%2147483647;return seed/2147483647;};
+  for(let i=0;i<420;i++){ const x=rnd()*256,y=rnd()*256,l=3+rnd()*14,a=(rnd()-.5)*.9;
+    g.strokeStyle= rnd()<.55?'rgba(70,45,20,0.10)':'rgba(255,248,235,0.09)'; g.lineWidth=.6+rnd()*.8;
+    g.beginPath(); g.moveTo(x,y); g.lineTo(x+Math.cos(a)*l,y+Math.sin(a)*l); g.stroke(); }
+  for(let i=0;i<500;i++){ g.fillStyle=rnd()<.5?'rgba(60,40,20,0.12)':'rgba(255,255,255,0.08)'; g.fillRect(rnd()*256,rnd()*256,1,1); }
+  return c; })();
+
+function polyPath(ctx,pts){ ctx.moveTo(pts[0][0],pts[0][1]); for(let i=1;i<pts.length;i++) ctx.lineTo(pts[i][0],pts[i][1]); ctx.closePath(); }
+
+function drawHat(ctx,s){
+  ctx.beginPath();
+  ctx.moveTo(-0.95*s,0.22*s);
+  ctx.quadraticCurveTo(-0.22*s,0.06*s,0,-0.5*s);
+  ctx.quadraticCurveTo(0.22*s,0.06*s,0.95*s,0.22*s);
+  ctx.quadraticCurveTo(0,0.44*s,-0.95*s,0.22*s);
+  ctx.fill();
+  ctx.beginPath(); ctx.arc(0,-0.52*s,0.07*s,0,Math.PI*2); ctx.fill();
+  ctx.lineWidth=0.06*s; ctx.lineCap='round';
+  for(const d of [-1,1]){ ctx.beginPath(); ctx.moveTo(d*0.35*s,0.34*s);
+    ctx.bezierCurveTo(d*0.2*s,0.7*s,d*0.62*s,0.78*s,d*0.5*s,0.55*s); ctx.stroke(); }
+}
+
+function drawArt(canvas, sc, o){
+  const ctx=canvas.getContext('2d'), {W,D,H}=S;
+  const toMM=()=>ctx.setTransform(sc,0,0,sc,-B.minX*sc,-B.minY*sc);
+  ctx.setTransform(1,0,0,1,0,0);
+  ctx.fillStyle=o.bg||o.color; ctx.fillRect(0,0,canvas.width,canvas.height);
+  ctx.save();
+  if(o.clip){ toMM(); ctx.beginPath(); spec.panels.forEach(p=>polyPath(ctx,p.poly)); ctx.clip('nonzero'); }
+  ctx.setTransform(1,0,0,1,0,0);
+  ctx.fillStyle=o.color; ctx.fillRect(0,0,canvas.width,canvas.height);
+  ctx.fillStyle=ctx.createPattern(fiber,'repeat'); ctx.fillRect(0,0,canvas.width,canvas.height);
+  toMM();
+  if(o.inside){ ctx.restore(); return; }
+  // lock slots
+  ctx.fillStyle='rgba(20,14,8,.6)'; spec.slots.forEach(s=>ctx.fillRect(...s));
+  if(o.folds){
+    ctx.strokeStyle='rgba(30,30,30,.45)'; ctx.lineWidth=.5; ctx.setLineDash([3,2]);
+    spec.panels.forEach(p=>{ if(!p.hinge) return; ctx.beginPath(); ctx.moveTo(...p.hinge[0]); ctx.lineTo(...p.hinge[1]); ctx.stroke(); });
+    ctx.setLineDash([]);
+  }
+  ctx.fillStyle=state.ink; ctx.strokeStyle=state.ink;
+  // orient so art reads upright on the closed box. Texture side is mirrored (seen from inside layout).
+  const orient=()=>{ if(o.mirror) ctx.scale(1,-1); else ctx.rotate(Math.PI); };
+  // lid logo
+  ctx.save(); ctx.translate(W/2,-H-D/2); orient();
+  if(state.logoImg){
+    const im=state.logoImg, mw=W*.62, mh=D*.52, k=Math.min(mw/im.width, mh/im.height);
+    ctx.drawImage(im,-im.width*k/2,-im.height*k/2,im.width*k,im.height*k);
+  } else {
+    const words=(state.brand.trim()||' ').split(/\s+/).slice(0,3);
+    let fs=Math.min(D*.2, H*.9);
+    ctx.font=`${fs}px "Bagel Fat One","IBM Plex Sans Thai",sans-serif`;
+    const widest=Math.max(...words.map(w=>ctx.measureText(w).width));
+    fs=Math.min(fs, fs*(W*.66)/Math.max(widest,1));
+    ctx.font=`${fs}px "Bagel Fat One","IBM Plex Sans Thai",sans-serif`;
+    ctx.textAlign='center'; ctx.textBaseline='middle';
+    const lh=fs*1.0, hat=fs*.62, total=hat*1.25+lh*words.length, top=-total/2;
+    ctx.save(); ctx.translate(0,top+hat*.55); drawHat(ctx,hat); ctx.restore();
+    words.forEach((w,i)=>ctx.fillText(w,0,top+hat*1.25+lh*(i+.5)));
+  }
+  ctx.restore();
+  // tagline on the tuck flap
+  if(state.tagline.trim()){
+    ctx.save(); ctx.translate(W/2,(spec.yLF+spec.yLid)/2); orient();
+    let fs=Math.min(5.2,(H-4)*.12);
+    ctx.font=`500 ${fs}px "IBM Plex Sans Thai",sans-serif`; ctx.textAlign='center'; ctx.textBaseline='middle';
+    const w=ctx.measureText(state.tagline).width; if(w>W*.8) { fs*=W*.8/w; ctx.font=`500 ${fs}px "IBM Plex Sans Thai",sans-serif`; }
+    ctx.fillText(state.tagline,0,0);
+    ctx.restore();
+  }
+  ctx.restore();
+}
+
+/* ---------------- three.js scene ---------------- */
+const canvas=$('gl'), stage=$('stage');
+const renderer=new THREE.WebGLRenderer({canvas,antialias:true,alpha:true,preserveDrawingBuffer:true});
+renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+renderer.outputEncoding=THREE.sRGBEncoding;
+renderer.toneMapping=THREE.ACESFilmicToneMapping; renderer.toneMappingExposure=1.05;
+renderer.shadowMap.enabled=true; renderer.shadowMap.type=THREE.PCFSoftShadowMap;
+const scene=new THREE.Scene();
+const camera=new THREE.PerspectiveCamera(34,1,.05,100);
+camera.position.set(5.4,4.1,6.2);
+const controls=new THREE.OrbitControls(camera,canvas);
+controls.enableDamping=true; controls.dampingFactor=.08; controls.minDistance=2.2; controls.maxDistance=16;
+controls.maxPolarAngle=Math.PI*.495; controls.target.set(0,.3,0); controls.autoRotateSpeed=1.4;
+
+scene.add(new THREE.HemisphereLight(0xfff6ea,0x3a4a40,.75));
+const sun=new THREE.DirectionalLight(0xffffff,1.15); sun.position.set(4,8,5); sun.castShadow=true;
+sun.shadow.mapSize.set(2048,2048); Object.assign(sun.shadow.camera,{left:-6,right:6,top:6,bottom:-6,near:1,far:25});
+sun.shadow.bias=-.0004; sun.shadow.normalBias=.02; scene.add(sun);
+const fill=new THREE.DirectionalLight(0xdfe9ff,.35); fill.position.set(-5,3,-4); scene.add(fill);
+
+// A1 cutting mat, 900 x 600 mm, 10 mm grid
+(function mat(){
+  const c=document.createElement('canvas'), k=2; c.width=900*k; c.height=600*k; const g=c.getContext('2d');
+  g.fillStyle='#2b4d40'; g.fillRect(0,0,c.width,c.height);
+  for(let x=0;x<=900;x+=10){ g.strokeStyle= x%50===0?'rgba(220,240,228,.38)':'rgba(220,240,228,.16)'; g.lineWidth= x%50===0?1.6:1;
+    g.beginPath(); g.moveTo(x*k,0); g.lineTo(x*k,c.height); g.stroke(); }
+  for(let y=0;y<=600;y+=10){ g.strokeStyle= y%50===0?'rgba(220,240,228,.38)':'rgba(220,240,228,.16)'; g.lineWidth= y%50===0?1.6:1;
+    g.beginPath(); g.moveTo(0,y*k); g.lineTo(c.width,y*k); g.stroke(); }
+  g.fillStyle='rgba(225,242,232,.55)'; g.font=`${9*k}px "IBM Plex Mono",monospace`;
+  for(let x=50;x<900;x+=50) g.fillText(String(x/10),x*k+3,12*k);
+  for(let y=50;y<600;y+=50) g.fillText(String(y/10),3,y*k-3);
+  const tex=new THREE.CanvasTexture(c); tex.encoding=THREE.sRGBEncoding; tex.anisotropy=renderer.capabilities.getMaxAnisotropy();
+  const m=new THREE.Mesh(new THREE.PlaneGeometry(9,6),new THREE.MeshStandardMaterial({map:tex,roughness:.92}));
+  m.rotation.x=-Math.PI/2; m.position.y=-.016; m.receiveShadow=true; scene.add(m);
+})();
+
+const outCanvas=document.createElement('canvas'), inCanvas=document.createElement('canvas');
+const outTex=new THREE.CanvasTexture(outCanvas), inTex=new THREE.CanvasTexture(inCanvas);
+[outTex,inTex].forEach(t=>{t.encoding=THREE.sRGBEncoding; t.anisotropy=renderer.capabilities.getMaxAnisotropy();});
+const matOut=new THREE.MeshStandardMaterial({map:outTex,roughness:.88,metalness:0});
+const matIn=new THREE.MeshStandardMaterial({map:inTex,roughness:.9,side:THREE.BackSide});
+const matEdge=new THREE.MeshStandardMaterial({color:shade(state.board,-.2),roughness:.95});
+const matHidden=new THREE.MeshBasicMaterial({visible:false});
+
+let model=null;
+function setUV(geo){
+  const p=geo.attributes.position, uv=geo.attributes.uv;
+  for(let i=0;i<p.count;i++){ uv.setXY(i,(p.getX(i)-B.minX)/B.w, 1-(p.getY(i)-B.minY)/B.h); }
+  uv.needsUpdate=true;
+}
+function panelMesh(poly){
+  const shape=new THREE.Shape(poly.map(([x,y])=>new THREE.Vector2(x,y)));
+  const c=new THREE.Group(); c.rotation.x=Math.PI/2;
+  const g=new THREE.ShapeGeometry(shape,8); setUV(g);
+  const out=new THREE.Mesh(g,matOut); out.position.z=S.T/2+.02;
+  const inn=new THREE.Mesh(g,matIn); inn.position.z=-S.T/2-.02;
+  const eg=new THREE.ExtrudeGeometry(shape,{depth:S.T,bevelEnabled:false,curveSegments:8});
+  const edge=new THREE.Mesh(eg,[matHidden,matEdge]); edge.position.z=-S.T/2;
+  [out,inn,edge].forEach(m=>{m.castShadow=true; m.receiveShadow=true; c.add(m);});
+  return c;
+}
+function buildModel(){
+  if(model){ scene.remove(model.root); model.root.traverse(o=>{ if(o.geometry) o.geometry.dispose(); }); }
+  spec=buildSpec(S.W,S.D,S.H); B=spec.bounds;
+  const sc=Math.min(3.6, 2600/Math.max(B.w,B.h));
+  outCanvas.width=Math.round(B.w*sc); outCanvas.height=Math.round(B.h*sc);
+  inCanvas.width=Math.round(B.w*1.4); inCanvas.height=Math.round(B.h*1.4);
+  model={sc, inSc:1.4};
+  const root=new THREE.Group(); root.scale.setScalar(.01);
+  const flip=new THREE.Group(); root.add(flip);
+  const sheet=new THREE.Group(); sheet.position.set(-S.W/2,0,-S.D/2); flip.add(sheet);
+  const nodes={};
+  for(const p of spec.panels){
+    const g=new THREE.Group(); const pp=p.parent? spec.byId[p.parent].pivot : [0,0];
+    g.userData.base=new THREE.Vector3(p.pivot[0]-pp[0],0,p.pivot[1]-pp[1]); g.position.copy(g.userData.base);
+    (p.parent? nodes[p.parent].g : sheet).add(g);
+    const m=panelMesh(p.poly); m.position.set(-p.pivot[0],0,-p.pivot[1]); g.add(m);
+    nodes[p.id]={g,p};
+  }
+  scene.add(root);
+  Object.assign(model,{root,flip,nodes});
+  redrawArt(); applyFold();
+  $('dimsChip').textContent=`${S.W} × ${S.D} × ${S.H} mm`;
+  $('flatSize').textContent=`แผ่นคลี่ ${Math.round(B.w)} × ${Math.round(B.h)} มม.`;
+}
+function redrawArt(){
+  drawArt(outCanvas, model.sc, {color:state.board, mirror:true, folds:state.showFolds});
+  drawArt(inCanvas, model.inSc, {color:state.inside, inside:true});
+  outTex.needsUpdate=true; inTex.needsUpdate=true;
+  matEdge.color.set(shade(state.board,-.22)).convertSRGBToLinear();
+}
+function phases(f){ return {flip:ss(0,.12,f),walls:ss(.12,.34,f),ears:ss(.30,.44,f),sides:ss(.42,.58,f),inner:ss(.56,.72,f),tuck:ss(.70,.82,f),lid:ss(.80,1,f)}; }
+function applyFold(){
+  const ph=phases(state.fold);
+  model.flip.rotation.z=Math.PI*(1-ph.flip);
+  model.root.position.y=Math.sin(ph.flip*Math.PI)*2.95;
+  for(const id in model.nodes){
+    const {g,p}=model.nodes[id]; if(!p.hinge) continue;
+    const a=ph[p.ph];
+    let ang=p.ang*a;
+    if(id==='lid') ang=(Math.PI/2)*a - state.open*(Math.PI/2+.5)*a;
+    g.rotation.set(0,0,0); g.rotation[p.axis]=ang;
+    g.position.set(g.userData.base.x+p.off[0]*a, g.userData.base.y+p.off[1]*a, g.userData.base.z+p.off[2]*a);
+  }
+}
+function foldTarget(){
+  const f=state.fold, flatZ=((B.minY+B.maxY)/2-S.D/2)*.01;
+  const k=ss(0,.45,f);
+  return new THREE.Vector3(0, S.H*.005*k, flatZ*(1-k));
+}
+
+/* ---------------- loop ---------------- */
+let follow=false, camAnim=null, last=performance.now();
+controls.addEventListener('start',()=>{follow=false; camAnim=null;});
+function resize(){ const r=stage.getBoundingClientRect(); renderer.setSize(r.width,r.height,false); camera.aspect=r.width/Math.max(r.height,1); camera.updateProjectionMatrix(); }
+new ResizeObserver(resize).observe(stage);
+const foldNames=f=> f<.02?'แผ่นแบน (ด้านพิมพ์)': f<.12?'พลิกแผ่น': f<.36?'พับผนังหน้า-หลัง': f<.58?'พับปีกและผนังข้าง': f<.72?'พับผนังข้างด้านใน': f<.82?'พับลิ้นเสียบ': f<.999?'ปิดฝา':'ประกอบเสร็จ';
+function syncUI(){
+  $('fold').value=Math.round(state.fold*1000);
+  $('foldLabel').textContent=foldNames(state.fold);
+  $('lidOpen').value=Math.round(state.open*100);
+  $('lidDeg').textContent= state.open<.01?'ปิดสนิท':`เปิด ${Math.round(state.open*100)}%`;
+  $('btnLid').textContent= state.openTarget>.05?'ปิดฝา':'เปิดฝา';
+}
+function tick(now){
+  const dt=Math.min(.05,(now-last)/1000); last=now;
+  let changed=false;
+  const step=(cur,tgt,spd)=>{ if(cur===tgt) return cur; const d=tgt-cur, s=reduceMotion?1:spd*dt; changed=true; return Math.abs(d)<=s?tgt:cur+Math.sign(d)*s; };
+  state.fold=step(state.fold,state.foldTarget,.42);
+  state.open=step(state.open,state.openTarget,1.1);
+  if(changed){ applyFold(); syncUI(); }
+  if(follow){ controls.target.lerp(foldTarget(),.08); if(!changed && controls.target.distanceTo(foldTarget())<.002) follow=false; }
+  if(camAnim){ const t=ss(0,1,(now-camAnim.t0)/camAnim.dur); camera.position.lerpVectors(camAnim.from,camAnim.to,t); controls.target.lerpVectors(camAnim.tf,camAnim.tt,t); if(t>=1) camAnim=null; }
+  controls.update(); renderer.render(scene,camera); requestAnimationFrame(tick);
+}
+
+/* ---------------- UI ---------------- */
+function swatches(el,list,key,hexEl){
+  const render=()=>{ el.innerHTML='';
+    list.forEach(([name,hex])=>{ const b=document.createElement('button'); b.className='sw'; b.style.background=hex; b.title=name; b.setAttribute('aria-label',name);
+      b.setAttribute('aria-pressed', String(state[key].toLowerCase()===hex)); b.onclick=()=>{state[key]=hex; after();}; el.appendChild(b); });
+    const c=document.createElement('input'); c.type='color'; c.className='sw-custom'; c.id='custom-'+key; c.title='เลือกสีเอง'; c.setAttribute('aria-label','เลือกสีเอง'); c.value=state[key];
+    c.oninput=()=>{state[key]=c.value; redrawArt(); hexEl.textContent=c.value.toUpperCase();}; c.onchange=after; el.appendChild(c);
+    hexEl.textContent=state[key].toUpperCase(); };
+  const after=()=>{ redrawArt(); saveColors(); render(); };
+  render();
+}
+swatches($('swBoard'),[['คราฟต์','#c6a676'],['ขาว','#f1efe9'],['ดำ','#232221'],['แดงชาด','#a9342c'],['เขียวใบตอง','#3e5a3f'],['ชมพูกลีบบัว','#e5b4ad']],'board',$('boardHex'));
+swatches($('swInside'),[['คราฟต์','#c6a676'],['ขาว','#f1efe9'],['ดำ','#232221'],['ชมพูกลีบบัว','#e5b4ad'],['เหลืองขมิ้น','#e2b33c']],'inside',$('insideHex'));
+swatches($('swInk'),[['ขาว','#ffffff'],['ดำ','#1c1b1a'],['ทอง','#c9a14a'],['แดงชาด','#a9342c'],['ครีม','#f2e3c4']],'ink',$('inkHex'));
+
+$('fold').addEventListener('input',e=>{ state.fold=state.foldTarget=e.target.value/1000; follow=true; applyFold(); syncUI(); });
+function flyTo(pos,tgt,dur=1100){ camAnim={from:camera.position.clone(),to:pos,tf:controls.target.clone(),tt:tgt,t0:performance.now(),dur:reduceMotion?1:dur}; follow=false; }
+function sizeK(){ return Math.max(S.W,S.D*1.3)/315; }
+$('btnFlat').onclick=()=>{ state.foldTarget=0; const k=sizeK(), z=((B.minY+B.maxY)/2-S.D/2)*.01; flyTo(new THREE.Vector3(0,7.6*k,z+4.2*k),new THREE.Vector3(0,0,z),1600); };
+$('btnBox').onclick=()=>{ state.foldTarget=1; const k=sizeK(); flyTo(new THREE.Vector3(5.4*k,4.1*k,6.2*k),new THREE.Vector3(0,S.H*.005,0),1600); };
+$('btnLid').onclick=()=>{ if(state.foldTarget<1){ state.foldTarget=1; follow=true; } state.openTarget= state.openTarget>.05?0:.62; syncUI(); };
+$('lidOpen').addEventListener('input',e=>{ state.open=state.openTarget=e.target.value/100; applyFold(); syncUI(); });
+$('autoRot').addEventListener('change',e=>{ controls.autoRotate=e.target.checked; });
+$('showFolds').addEventListener('change',e=>{ state.showFolds=e.target.checked; redrawArt(); });
+let artTimer; const artSoon=()=>{ clearTimeout(artTimer); artTimer=setTimeout(redrawArt,120); };
+$('brand').addEventListener('input',e=>{ state.brand=e.target.value; $('titleBrand').textContent= e.target.value.trim()? toTitle(e.target.value):'Mailer box'; artSoon(); });
+$('tagline').addEventListener('input',e=>{ state.tagline=e.target.value; artSoon(); });
+function toTitle(s){ return s.toLowerCase().replace(/\b\w/g,c=>c.toUpperCase()); }
+$('logoFile').addEventListener('change',e=>{
+  const f=e.target.files[0]; if(!f) return;
+  const r=new FileReader(); r.onload=()=>{ const im=new Image(); im.onload=()=>{ state.logoImg=im; $('logoClear').hidden=false; redrawArt(); }; im.src=r.result; }; r.readAsDataURL(f);
+});
+$('logoClear').onclick=()=>{ state.logoImg=null; $('logoClear').hidden=true; $('logoFile').value=''; redrawArt(); };
+$('dimApply').onclick=()=>{
+  const v=(id,a,b)=>clamp(Math.round(+$(id).value||0),a,b);
+  S.W=v('dimW',100,600); S.D=v('dimD',80,450); S.H=v('dimH',30,200);
+  $('dimW').value=S.W; $('dimD').value=S.D; $('dimH').value=S.H;
+  buildModel(); follow=true;
+};
+const VIEWS={iso:[5.4,4.1,6.2],front:[0,1.6,7.6],top:[0,9,.02],side:[8,1.8,0]};
+document.querySelectorAll('[data-view]').forEach(b=>b.onclick=()=>{
+  const to=new THREE.Vector3(...VIEWS[b.dataset.view]).multiplyScalar(Math.max(S.W,S.D*1.3)/315);
+  const tt=foldTarget(); to.add(tt);
+  camAnim={from:camera.position.clone(),to,tf:controls.target.clone(),tt,t0:performance.now(),dur:reduceMotion?1:800}; follow=false;
+});
+
+/* ---------------- PDF ---------------- */
+function hingeSegs(){ return spec.panels.filter(p=>p.hinge).map(p=>p.hinge); }
+function cutPieces(a,b,hs){
+  const eps=.01;
+  if(Math.abs(a[0]-b[0])<eps || Math.abs(a[1]-b[1])<eps){
+    const vert=Math.abs(a[0]-b[0])<eps, c=vert?a[0]:a[1];
+    let lo=vert?Math.min(a[1],b[1]):Math.min(a[0],b[0]), hi=vert?Math.max(a[1],b[1]):Math.max(a[0],b[0]);
+    const iv=[];
+    for(const h of hs){ const hv=Math.abs(h[0][0]-h[1][0])<eps; if(hv!==vert) continue;
+      const hc=vert?h[0][0]:h[0][1]; if(Math.abs(hc-c)>eps) continue;
+      const h0=vert?Math.min(h[0][1],h[1][1]):Math.min(h[0][0],h[1][0]), h1=vert?Math.max(h[0][1],h[1][1]):Math.max(h[0][0],h[1][0]);
+      iv.push([h0,h1]); }
+    iv.sort((x,y)=>x[0]-y[0]);
+    const out=[]; let cur=lo;
+    for(const [h0,h1] of iv){ if(h1<=cur+eps||h0>=hi-eps) continue; if(h0>cur+eps) out.push([cur,h0]); cur=Math.max(cur,h1); }
+    if(cur<hi-eps) out.push([cur,hi]);
+    return out.map(([s,e])=> vert? [[c,s],[c,e]] : [[s,c],[e,c]]);
+  }
+  return [[a,b]];
+}
+function hexRGB(h){ const n=parseInt(h.slice(1),16); return [n>>16,(n>>8)&255,n&255]; }
+function arrow(doc,x1,y1,x2,y2,label,X,Y){
+  const ax=X(x1),ay=Y(y1),bx=X(x2),by=Y(y2); doc.line(ax,ay,bx,by);
+  const L=Math.hypot(bx-ax,by-ay), ux=(bx-ax)/L, uy=(by-ay)/L, s=3, w=1.4;
+  doc.triangle(ax,ay, ax+ux*s-uy*w, ay+uy*s+ux*w, ax+ux*s+uy*w, ay+uy*s-ux*w,'F');
+  doc.triangle(bx,by, bx-ux*s-uy*w, by-uy*s+ux*w, bx-ux*s+uy*w, by-uy*s-ux*w,'F');
+  const mx=(ax+bx)/2, my=(ay+by)/2; doc.setFontSize(12);
+  const tw=doc.getTextWidth(label);
+  doc.setFillColor(255,255,255); doc.rect(mx-tw/2-2,my-3.6,tw+4,6.2,'F');
+  doc.text(label,mx,my+1.2,{align:'center'});
+}
+function buildPdf(){
+  const {jsPDF}=window.jspdf; const {W,D,H}=S;
+  const M=18, TB=34, pw=B.w+2*M, ph=B.h+2*M+TB;
+  const doc=new jsPDF({unit:'mm',format:[pw,ph],orientation:pw>ph?'landscape':'portrait',compress:true});
+  // artwork raster (print side), clipped to the dieline
+  const c=document.createElement('canvas'), sc=Math.min(6,4200/Math.max(B.w,B.h));
+  c.width=Math.round(B.w*sc); c.height=Math.round(B.h*sc);
+  drawArt(c,sc,{color:state.board,bg:'#ffffff',clip:true,mirror:false,folds:false});
+  doc.addImage(c.toDataURL('image/jpeg',.92),'JPEG',M,M,B.w,B.h,undefined,'FAST');
+  const X=x=>M+x-B.minX, Y=y=>M+y-B.minY, hs=hingeSegs();
+  // cut lines
+  doc.setDrawColor(18,18,18); doc.setLineWidth(.35); doc.setLineDashPattern([],0);
+  for(const p of spec.panels){ const pts=p.poly; for(let i=0;i<pts.length;i++){ const a=pts[i], b=pts[(i+1)%pts.length];
+    for(const [s,e] of cutPieces(a,b,hs)) doc.line(X(s[0]),Y(s[1]),X(e[0]),Y(e[1])); } }
+  spec.slots.forEach(s=>doc.rect(X(s[0]),Y(s[1]),s[2],s[3],'S'));
+  // fold lines
+  doc.setLineWidth(.35); doc.setLineDashPattern([3,2],0);
+  hs.forEach(h=>{ doc.setDrawColor(45,107,196); doc.line(X(h[0][0]),Y(h[0][1]),X(h[1][0]),Y(h[1][1])); });
+  doc.setLineDashPattern([],0);
+  // dimensions
+  doc.setDrawColor(46,106,80); doc.setFillColor(46,106,80); doc.setTextColor(46,106,80); doc.setLineWidth(.3); doc.setFont('helvetica','normal');
+  const dimArrow=(x1,y1,x2,y2,l)=>{ doc.setFillColor(46,106,80); arrow(doc,x1,y1,x2,y2,l,X,Y); doc.setFillColor(46,106,80); };
+  dimArrow(0,D*.88,W,D*.88,`${W} mm`);
+  dimArrow(W*.74,0,W*.74,D,`${D} mm`);
+  dimArrow(W/2,-H,W/2,0,`${H} mm`);
+  // title block
+  const ty=ph-TB+4; doc.setDrawColor(200,200,200); doc.line(M,ty-4,pw-M,ty-4);
+  doc.setTextColor(25,30,28); doc.setFont('helvetica','bold'); doc.setFontSize(15);
+  doc.text(`${(state.brand||'Mailer').toUpperCase()}  /  Mailer box, roll end tuck front`,M,ty+5);
+  doc.setFont('helvetica','normal'); doc.setFontSize(10.5); doc.setTextColor(80,90,85);
+  doc.text(`Inner size ${W} x ${D} x ${H} mm   |   Flat size ${Math.round(B.w)} x ${Math.round(B.h)} mm   |   Scale 1:1   |   Print side shown`,M,ty+12);
+  doc.text(`Board ${state.board.toUpperCase()}   Inside ${state.inside.toUpperCase()}   Ink ${state.ink.toUpperCase()}   |   ${new Date().toISOString().slice(0,10)}`,M,ty+18);
+  // legend
+  const lx=pw-M-70; doc.setLineWidth(.4); doc.setDrawColor(18,18,18); doc.line(lx,ty+4,lx+12,ty+4); doc.text('Cut',lx+15,ty+5.3);
+  doc.setDrawColor(45,107,196); doc.setLineDashPattern([3,2],0); doc.line(lx+30,ty+4,lx+42,ty+4); doc.setLineDashPattern([],0); doc.text('Fold',lx+45,ty+5.3);
+  doc.setTextColor(46,106,80); doc.text('Dimension',lx,ty+12);
+  // page 2: 3D render + spec
+  doc.addPage([297,210],'landscape');
+  renderer.setClearColor(0xdde3dc,1); renderer.render(scene,camera);
+  const shot=renderer.domElement, iw=shot.width, ih=shot.height, bw=190, bh=170, k=Math.min(bw/iw,bh/ih);
+  const shotURL=shot.toDataURL('image/jpeg',.92); renderer.setClearColor(0x000000,0); renderer.render(scene,camera);
+  const [sr,sg,sb]=hexRGB('#dde3dc'); doc.setFillColor(sr,sg,sb); doc.rect(14,20,bw,bh,'F');
+  doc.addImage(shotURL,'JPEG',14+(bw-iw*k)/2,20+(bh-ih*k)/2,iw*k,ih*k,undefined,'FAST');
+  doc.setTextColor(25,30,28); doc.setFont('helvetica','bold'); doc.setFontSize(18); doc.text((state.brand||'Mailer box').toUpperCase(),214,30);
+  doc.setFont('helvetica','normal'); doc.setFontSize(10); doc.setTextColor(90,100,95); doc.text('Mailer box  /  RETF',214,37);
+  const rows=[['Inner W x D x H',`${W} x ${D} x ${H} mm`],['Flat dieline',`${Math.round(B.w)} x ${Math.round(B.h)} mm`],['Board outside',state.board.toUpperCase()],['Board inside',state.inside.toUpperCase()],['Ink',state.ink.toUpperCase()],['Lid artwork',state.logoImg?'Uploaded logo':'Brand wordmark'],['Tuck flap text',state.tagline||'-']];
+  let ry=52; doc.setFontSize(10);
+  rows.forEach(([k2,v])=>{ doc.setTextColor(110,118,114); doc.text(k2,214,ry); doc.setTextColor(25,30,28); doc.text(doc.splitTextToSize(String(v),70),214,ry+5); ry+=15; });
+  [['board',state.board],['inside',state.inside],['ink',state.ink]].forEach(([n,h],i)=>{ const [r,g,b2]=hexRGB(h); doc.setFillColor(r,g,b2); doc.setDrawColor(150,150,150); doc.rect(214+i*22,ry+2,16,16,'FD'); doc.setFontSize(8); doc.setTextColor(110,118,114); doc.text(n,214+i*22,ry+23); });
+  return doc;
+}
+window.__pdfDataUri=()=>buildPdf().output('datauristring');
+$('btnPdf').onclick=async()=>{
+  const st=$('pdfStatus'), btn=$('btnPdf'); st.className='status'; st.textContent='กำลังสร้าง PDF…'; btn.disabled=true;
+  try{
+    await new Promise(r=>setTimeout(r,30));
+    const doc=buildPdf(), fname=`${(state.brand||'mailer').trim().toLowerCase().replace(/\s+/g,'-')}-mailer-${S.W}x${S.D}x${S.H}.pdf`;
+    const dl= window.claude && window.claude.use ? await window.claude.use('downloads') : null;
+    if(!dl){ doc.save(fname); st.className='status ok'; st.textContent='ดาวน์โหลด PDF แล้ว'; return; }
+    await dl.save({filename:fname,data:doc.output('arraybuffer')});
+    st.className='status ok'; st.textContent='บันทึก PDF แล้ว';
+  }catch(e){
+    st.textContent = e&&e.code==='declined' ? 'ยกเลิกการบันทึก' : e&&e.code==='rate_limited' ? 'มีหน้าต่างบันทึกเปิดอยู่ รอสักครู่แล้วลองใหม่' : 'สร้าง PDF ไม่สำเร็จ: '+(e&&e.message||e);
+  }finally{ btn.disabled=false; }
+};
+
+/* ---------------- boot ---------------- */
+buildModel(); resize(); syncUI(); requestAnimationFrame(tick);
+if(document.fonts){ Promise.all([document.fonts.load('80px "Bagel Fat One"'),document.fonts.load('500 20px "IBM Plex Sans Thai"')]).then(redrawArt).catch(()=>{}); document.fonts.ready.then(redrawArt); }
+})();
+</script>
+
+</body>
+</html>
